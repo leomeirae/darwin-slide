@@ -74,24 +74,14 @@ export async function POST(req: NextRequest) {
             automation.User?.subscription?.plan === 'PRO'
           ) {
             const smart_ai_message = await openai.chat.completions.create({
-              model: 'gpt-4o-mini',
+              model: 'gpt-4o',
               messages: [
                 {
                   role: 'assistant',
                   content: `${automation.listener?.prompt}: Keep responses under 2 sentences`,
                 },
               ],
-            }).catch(error => {
-              console.error('OpenAI API Error:', error);
-              return null;
-            });
-
-            if (!smart_ai_message) {
-              return NextResponse.json(
-                { message: 'Failed to generate AI response' },
-                { status: 500 }
-              );
-            }
+            })
 
             if (smart_ai_message.choices[0].message.content) {
               const reciever = createChatHistory(
@@ -194,25 +184,14 @@ export async function POST(req: NextRequest) {
               automation.User?.subscription?.plan === 'PRO'
             ) {
               const smart_ai_message = await openai.chat.completions.create({
-                model: 'gpt-4o-mini',
+                model: 'gpt-4o',
                 messages: [
                   {
                     role: 'assistant',
                     content: `${automation.listener?.prompt}: keep responses under 2 sentences`,
                   },
                 ],
-              }).catch(error => {
-                console.error('OpenAI API Error:', error);
-                return null;
-              });
-
-              if (!smart_ai_message) {
-                return NextResponse.json(
-                  { message: 'Failed to generate AI response' },
-                  { status: 500 }
-                );
-              }
-
+              })
               if (smart_ai_message.choices[0].message.content) {
                 const reciever = createChatHistory(
                   automation.id,
@@ -270,7 +249,7 @@ export async function POST(req: NextRequest) {
           automation.listener?.listener === 'SMARTAI'
         ) {
           const smart_ai_message = await openai.chat.completions.create({
-            model: 'gpt-4o-mini',
+            model: 'gpt-4o',
             messages: [
               {
                 role: 'assistant',
@@ -282,17 +261,7 @@ export async function POST(req: NextRequest) {
                 content: webhook_payload.entry[0].messaging[0].message.text,
               },
             ],
-          }).catch(error => {
-            console.error('OpenAI API Error:', error);
-            return null;
-          });
-
-          if (!smart_ai_message) {
-            return NextResponse.json(
-              { message: 'Failed to generate AI response' },
-              { status: 500 }
-            );
-          }
+          })
 
           if (smart_ai_message.choices[0].message.content) {
             const reciever = createChatHistory(

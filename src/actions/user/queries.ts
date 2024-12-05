@@ -1,6 +1,7 @@
 'use server'
 
 import { client } from '@/lib/prisma'
+import { Prisma } from '@prisma/client';
 
 export const findUser = async (clerkId: string) => {
   return await client.user.findUnique({
@@ -27,22 +28,35 @@ export const createUser = async (
   lastname: string,
   email: string
 ) => {
-  return await client.user.create({
-    data: {
-      clerkId,
-      firstname,
-      lastname,
-      email,
-      subscription: {
-        create: {},
+  try {
+    return await client.user.create({
+      data: {
+        clerkId,
+        firstname,
+        lastname,
+        email,
+        subscription: {
+          create: {},
+        },
       },
-    },
-    select: {
-      firstname: true,
-      lastname: true,
-    },
-  })
-}
+      select: {
+        firstname: true,
+        lastname: true,
+      },
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      return await client.user.findUnique({
+        where: { email },
+        select: {
+          firstname: true,
+          lastname: true,
+        },
+      });
+    }
+    throw error;
+  }
+};
 
 export const updateSubscription = async (
   clerkId: string,

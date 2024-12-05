@@ -17,11 +17,13 @@ import { useDispatch } from 'react-redux'
 import { TRIGGER } from '@/redux/slices/automation'
 
 export const useCreateAutomation = (id?: string) => {
-  return useMutationData(
-      ['create-automation'],
-      () => createAutomations(id),
-      'user-automations'
-    );
+  const { isPending, mutate } = useMutationData(
+    ['create-automation'],
+    () => createAutomations(id),
+    'user-automations'
+  )
+
+  return { isPending, mutate }
 }
 
 export const useEditAutomation = (automationId: string) => {
@@ -55,7 +57,7 @@ export const useEditAutomation = (automationId: string) => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [mutate])
+  }, [])
 
   return {
     edit,
