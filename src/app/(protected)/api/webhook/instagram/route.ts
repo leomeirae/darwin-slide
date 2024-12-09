@@ -12,6 +12,11 @@ import { openai } from '@/lib/openai'
 import { client } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 
+// Add type declaration for global
+declare global {
+  var processedMessages: Set<string> | undefined
+}
+
 export async function GET(req: NextRequest) {
   const hub = req.nextUrl.searchParams.get('hub.challenge')
   return new NextResponse(hub)
@@ -19,22 +24,52 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const webhook_payload = await req.json()
+  console.log('📨 Received webhook payload:', JSON.stringify(webhook_payload, null, 2))
+  
+  const messageId = webhook_payload.entry[0].messaging?.[0]?.message?.mid || 
+                   webhook_payload.entry[0].changes?.[0]?.value?.id
+
+  if (!messageId) {
+    console.log('❌ No message ID found in payload')
+    return NextResponse.json({ message: 'Invalid payload' }, { status: 400 })
+  }
+
+  if (globalThis.processedMessages === undefined) {
+    globalThis.processedMessages = new Set<string>()
+  }
+
+  if (globalThis.processedMessages.has(messageId)) {
+    console.log('⚠️ Duplicate message detected, skipping:', messageId)
+    return NextResponse.json({ message: 'Duplicate message' }, { status: 200 })
+  }
+
+  globalThis.processedMessages.add(messageId)
+  
+  if (globalThis.processedMessages.size > 1000) {
+    const values = Array.from(globalThis.processedMessages)
+    globalThis.processedMessages = new Set(values.slice(-1000))
+  }
+
   let matcher
   try {
     if (webhook_payload.entry[0].messaging) {
+      console.log('💬 Processing DM message:', webhook_payload.entry[0].messaging[0].message.text)
       matcher = await matchKeyword(
         webhook_payload.entry[0].messaging[0].message.text
       )
+      console.log('🔍 Keyword match result:', matcher)
     }
 
     if (webhook_payload.entry[0].changes) {
+      console.log('💭 Processing comment:', webhook_payload.entry[0].changes[0].value.text)
       matcher = await matchKeyword(
         webhook_payload.entry[0].changes[0].value.text
       )
+      console.log('🔍 Keyword match result:', matcher)
     }
 
     if (matcher && matcher.automationId) {
-      console.log('Matched')
+      console.log('✅ Found matching automation:', matcher.automationId)
       // We have a keyword matcher
 
       if (webhook_payload.entry[0].messaging) {
@@ -42,12 +77,17 @@ export async function POST(req: NextRequest) {
           matcher.automationId,
           true
         )
+        console.log('🤖 Retrieved automation config:', {
+          type: automation?.listener?.listener,
+          isActive: automation?.active
+        })
 
         if (automation && automation.trigger) {
           if (
             automation.listener &&
             automation.listener.listener === 'MESSAGE'
           ) {
+            console.log('📤 Sending direct message response')
             const direct_message = await sendDM(
               webhook_payload.entry[0].id,
               webhook_payload.entry[0].messaging[0].sender.id,
@@ -56,6 +96,7 @@ export async function POST(req: NextRequest) {
             )
 
             if (direct_message.status === 200) {
+              console.log('✅ Message sent successfully')
               const tracked = await trackResponses(automation.id, 'DM')
               if (tracked) {
                 return NextResponse.json(
@@ -73,8 +114,9 @@ export async function POST(req: NextRequest) {
             automation.listener.listener === 'SMARTAI' &&
             automation.User?.subscription?.plan === 'PRO'
           ) {
+            console.log('🤖 Generating Smart AI response')
             const smart_ai_message = await openai.chat.completions.create({
-              model: 'gpt-4o',
+              model: 'gpt-4o-mini',
               messages: [
                 {
                   role: 'assistant',
@@ -82,8 +124,10 @@ export async function POST(req: NextRequest) {
                 },
               ],
             })
+            console.log('🤖 AI Response:', smart_ai_message.choices[0].message.content)
 
             if (smart_ai_message.choices[0].message.content) {
+              console.log('💾 Saving chat history')
               const reciever = createChatHistory(
                 automation.id,
                 webhook_payload.entry[0].id,
@@ -99,7 +143,7 @@ export async function POST(req: NextRequest) {
               )
 
               await client.$transaction([reciever, sender])
-
+              console.log('📤 Sending AI response message')
               const direct_message = await sendDM(
                 webhook_payload.entry[0].id,
                 webhook_payload.entry[0].messaging[0].sender.id,
@@ -108,6 +152,7 @@ export async function POST(req: NextRequest) {
               )
 
               if (direct_message.status === 200) {
+                console.log('✅ AI response sent successfully')
                 const tracked = await trackResponses(automation.id, 'DM')
                 if (tracked) {
                   return NextResponse.json(
@@ -184,7 +229,7 @@ export async function POST(req: NextRequest) {
               automation.User?.subscription?.plan === 'PRO'
             ) {
               const smart_ai_message = await openai.chat.completions.create({
-                model: 'gpt-4o',
+                model: 'gpt-4o-mini',
                 messages: [
                   {
                     role: 'assistant',
@@ -212,7 +257,7 @@ export async function POST(req: NextRequest) {
                 const direct_message = await sendPrivateMessage(
                   webhook_payload.entry[0].id,
                   webhook_payload.entry[0].changes[0].value.id,
-                  automation.listener?.prompt,
+                  smart_ai_message.choices[0].message.content,
                   automation.User?.integrations[0].token!
                 )
 
@@ -236,6 +281,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (!matcher) {
+      console.log('❌ No keyword match found')
       const customer_history = await getChatHistory(
         webhook_payload.entry[0].messaging[0].recipient.id,
         webhook_payload.entry[0].messaging[0].sender.id
@@ -249,7 +295,7 @@ export async function POST(req: NextRequest) {
           automation.listener?.listener === 'SMARTAI'
         ) {
           const smart_ai_message = await openai.chat.completions.create({
-            model: 'gpt-4o',
+            model: 'gpt-4o-mini',
             messages: [
               {
                 role: 'assistant',
@@ -313,6 +359,7 @@ export async function POST(req: NextRequest) {
       { status: 200 }
     )
   } catch (error) {
+    console.error('🔴 Error processing webhook:', error)
     return NextResponse.json(
       {
         message: 'No automation set',

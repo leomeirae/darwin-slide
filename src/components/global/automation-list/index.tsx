@@ -12,24 +12,57 @@ import { useMutationDataState } from '@/hooks/use-mutation-data'
 type Props = {}
 
 const AutomationList = (props: Props) => {
-  const { data } = useQueryAutomations()
-
-  const { latestVariable } = useMutationDataState(['create-automation'])
-  console.log(latestVariable)
+  const { data, isLoading } = useQueryAutomations()
+  const { latestVariable: createVariable } = useMutationDataState(['create-automation'])
+  const { latestVariable: deleteVariable } = useMutationDataState(['delete-automation'])
   const { pathname } = usePaths()
   
   const optimisticUiData = useMemo(() => {
-    if ((latestVariable && latestVariable?.variables &&  data)) {
-      const test = [latestVariable.variables, ...data.data]
-      return { data: test }
-    }
-    return data || { data: [] }
-  }, [latestVariable, data])
+    if (!data?.data) return { status: 200, data: [] }
+    
+    let updatedData = [...data.data]
 
-  if (data?.status !== 200 || data.data.length <= 0) {
+    // Handle creation
+    if (createVariable?.variables && createVariable.status === 'pending') {
+      updatedData = [
+        {
+          id: createVariable.variables.id,
+          name: createVariable.variables.name,
+          createdAt: createVariable.variables.createdAt,
+          keywords: [],
+          listener: null,
+          active: false,
+          userId: null
+        },
+        ...updatedData
+      ]
+    }
+
+    // Handle deletion
+    if (deleteVariable?.variables && deleteVariable.status === 'pending') {
+      updatedData = updatedData.filter(
+        automation => automation.id !== deleteVariable.variables.id
+      )
+    }
+
+    return { 
+      status: 200,
+      data: updatedData
+    }
+  }, [data, createVariable, deleteVariable])
+
+  if (isLoading) {
+    return (
+      <div className="h-[70vh] flex justify-center items-center">
+        <p className="text-gray-400">Loading automations...</p>
+      </div>
+    )
+  }
+
+  if (!optimisticUiData.data.length) {
     return (
       <div className="h-[70vh] flex justify-center items-center flex-col gap-y-3">
-        <h3 className="text-lg text-gray-400">No Automations </h3>
+        <h3 className="text-lg text-gray-400">No Automations</h3>
         <CreateAutomation />
       </div>
     )
@@ -37,7 +70,7 @@ const AutomationList = (props: Props) => {
 
   return (
     <div className="flex flex-col gap-y-3">
-      {optimisticUiData.data!.map((automation) => (
+      {optimisticUiData.data.map((automation) => (
         <Link
           href={`${pathname}/${automation.id}`}
           key={automation.id}
@@ -49,29 +82,22 @@ const AutomationList = (props: Props) => {
               This is from the comment
             </p>
 
-            {automation.keywords.length > 0 ? (
+            {automation.keywords?.length > 0 ? (
               <div className="flex gap-x-2 flex-wrap mt-3">
-                {
-                  //@ts-ignore
-                  automation.keywords.map((keyword, key) => (
-                    <div
-                      key={keyword.id}
-                      className={cn(
-                        'rounded-full px-4 py-1 capitalize',
-                        (0 + 1) % 1 == 0 &&
-                          'bg-keyword-green/15 border-2 border-keyword-green',
-                        (1 + 1) % 2 == 0 &&
-                          'bg-keyword-purple/15 border-2 border-keyword-purple',
-                        (2 + 1) % 3 == 0 &&
-                          'bg-keyword-yellow/15 border-2 border-keyword-yellow',
-                        (3 + 1) % 4 == 0 &&
-                          'bg-keyword-red/15 border-2 border-keyword-red'
-                      )}
-                    >
-                      {keyword.word}
-                    </div>
-                  ))
-                }
+                {automation.keywords.map((keyword, key) => (
+                  <div
+                    key={keyword.id}
+                    className={cn(
+                      'rounded-full px-4 py-1 capitalize',
+                      (key + 1) % 4 === 1 && 'bg-keyword-green/15 border-2 border-keyword-green',
+                      (key + 1) % 4 === 2 && 'bg-keyword-purple/15 border-2 border-keyword-purple',
+                      (key + 1) % 4 === 3 && 'bg-keyword-yellow/15 border-2 border-keyword-yellow',
+                      (key + 1) % 4 === 0 && 'bg-keyword-red/15 border-2 border-keyword-red'
+                    )}
+                  >
+                    {keyword.word}
+                  </div>
+                ))}
               </div>
             ) : (
               <div className="rounded-full border-2 mt-3 border-dashed border-white/60 px-3 py-1">
@@ -81,11 +107,11 @@ const AutomationList = (props: Props) => {
           </div>
           <div className="flex flex-col justify-between">
             <p className="capitalize text-sm font-light text-[#9B9CA0]">
-              {getMonth(automation.createdAt.getUTCMonth() + 1)}{' '}
-              {automation.createdAt.getUTCDate() === 1
-                ? `${automation.createdAt.getUTCDate()}st`
-                : `${automation.createdAt.getUTCDate()}th`}{' '}
-              {automation.createdAt.getUTCFullYear()}
+              {getMonth(new Date(automation.createdAt).getUTCMonth() + 1)}{' '}
+              {new Date(automation.createdAt).getUTCDate() === 1
+                ? `${new Date(automation.createdAt).getUTCDate()}st`
+                : `${new Date(automation.createdAt).getUTCDate()}th`}{' '}
+              {new Date(automation.createdAt).getUTCFullYear()}
             </p>
 
             {automation.listener?.listener === 'SMARTAI' ? (

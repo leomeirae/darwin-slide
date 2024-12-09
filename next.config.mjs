@@ -4,12 +4,15 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: "instagram.frec5-1.fna.fbcdn.net",
-        
+        hostname: 'instagram.frec5-1.fna.fbcdn.net',
+      },
+      {
+        protocol: 'https',
+        hostname: 'scontent.cdninstagram.com',
       },
     ],
-    domains: ['scontent.cdninstagram.com'],
   },
+  optimizeFonts: true,
 }
 
 export default nextConfig

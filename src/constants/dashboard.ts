@@ -10,20 +10,26 @@ type Props = {
 export const DASHBOARD_CARDS: Props[] = [
   {
     id: v4(),
-    label: 'Set-up Auto Replies',
-    subLabel: 'Deliver a product lineup through Instagram DM',
-    description: 'Get products in front of your followers in as many places',
+    label: 'Configurar Respostas Automáticas',
+    subLabel: 'Envie uma linha de produtos através do DM do Instagram',
+    description: 'Mostre seus produtos aos seguidores diretamente nas mensagens privadas e aumente o engajamento.'
   },
   {
     id: v4(),
-    label: 'Answer Questions with AI',
-    subLabel: 'Identify and respond to queries with AI',
-    description: 'The intention of the message will be automatically detected',
+    label: 'Exibir Produtos para Seguidores',
+    subLabel: 'Mostre seus produtos em diversos locais no Instagram',
+    description: 'Apresente seus produtos em comentários e mensagens diretas, alcançando mais pessoas de forma estratégica.'
   },
   {
     id: v4(),
-    label: 'Answer Questions with AI',
-    subLabel: 'Identify and respond to queries with AI',
-    description: 'The intention of the message will be automatically detected',
+    label: 'Responder Perguntas com IA',
+    subLabel: 'Identifique e responda a perguntas com Inteligência Artificial',
+    description: 'A IA detecta automaticamente a intenção da mensagem, proporcionando respostas rápidas e precisas.'
   },
+  {
+    id: v4(),
+    label: 'Detecção Automática de Intenção',
+    subLabel: 'Entenda automaticamente o que seu seguidor quer saber',
+    description: 'A intenção da mensagem será identificada automaticamente, permitindo respostas mais inteligentes e personalizadas.'
+  }
 ]

@@ -165,3 +165,9 @@ export const addPost = async (
     },
   })
 }
+
+export const deleteAutomation = async (id: string) => {
+  return await client.automation.delete({
+    where: { id },
+  })
+}

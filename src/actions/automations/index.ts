@@ -8,6 +8,7 @@ import {
   addPost,
   addTrigger,
   createAutomation,
+  deleteAutomation,
   deleteKeywordQuery,
   findAutomation,
   getAutomations,
@@ -171,6 +172,19 @@ export const activateAutomation = async (id: string, state: boolean) => {
         status: 200,
         data: `Automation ${state ? 'activated' : 'disabled'}`,
       }
+    return { status: 404, data: 'Automation not found' }
+  } catch (error) {
+    return { status: 500, data: 'Oops! something went wrong' }
+  }
+}
+
+export const deleteAutomationAction = async (id: string) => {
+  await onCurrentUser()
+  try {
+    const deleted = await deleteAutomation(id)
+    if (deleted) {
+      return { status: 200, data: 'Automation deleted successfully' }
+    }
     return { status: 404, data: 'Automation not found' }
   } catch (error) {
     return { status: 500, data: 'Oops! something went wrong' }

@@ -2,6 +2,7 @@
 import { ChevronRight, PencilIcon } from 'lucide-react'
 import React from 'react'
 import ActivateAutomationButton from '../../activate-automation-button'
+import DeleteAutomationButton from '../../delete-automation-button'
 import { useQueryAutomation } from '@/hooks/user-queries'
 import { useEditAutomation } from '@/hooks/use-automations'
 import { useMutationDataState } from '@/hooks/use-mutation-data'
@@ -64,7 +65,10 @@ const AutomationsBreadCrumb = ({ id }: Props) => {
           </p>
         </div>
       </div>
-      <ActivateAutomationButton id={id} />
+      <div className="flex items-center gap-x-2">
+        <DeleteAutomationButton id={id} />
+        <ActivateAutomationButton id={id} />
+      </div>
     </div>
   )
 }

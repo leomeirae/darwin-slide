@@ -2,11 +2,11 @@
 
 import { redirect } from 'next/navigation'
 import { onCurrentUser } from '../user'
-import { createIntegration, getIntegration } from './queries'
+import { createIntegration, getIntegration, deleteIntegration } from './queries'
 import { generateTokens } from '@/lib/fetch'
 import axios from 'axios'
 
-export const onOAuthInstagram = (strategy: 'INSTAGRAM' | 'CRM') => {
+export const onOAuthInstagram = async (strategy: 'INSTAGRAM' | 'CRM') => {
   if (strategy === 'INSTAGRAM') {
     return redirect(process.env.INSTAGRAM_EMBEDDED_OAUTH_URL as string)
   }
@@ -45,5 +45,19 @@ export const onIntegrate = async (code: string) => {
   } catch (error) {
     console.log('🔴 500', error)
     return { status: 500 }
+  }
+}
+
+export const disconnectIntegration = async (id: string) => {
+  await onCurrentUser()
+  try {
+    const deleted = await deleteIntegration(id)
+    if (deleted) {
+      return { status: 200, data: 'Integration disconnected successfully' }
+    }
+    return { status: 404, data: 'Integration not found' }
+  } catch (error) {
+    console.log('🔴 Error disconnecting integration:', error)
+    return { status: 500, data: 'Oops! something went wrong' }
   }
 }
