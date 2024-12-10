@@ -63,8 +63,10 @@ export const sendPrivateMessage = async (
 
 export const generateTokens = async (code: string) => {
   try {
+    console.log('Starting token generation with code:', code);
+    
     // Exchange the code for a short-lived access token
-    const shortTokenRes = await fetch('https://api.instagram.com/oauth/access_token', {
+    const shortTokenRes = await fetch('https://graph.facebook.com/v21.0/oauth/access_token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -79,21 +81,27 @@ export const generateTokens = async (code: string) => {
     });
 
     const shortTokenData = await shortTokenRes.json();
+    console.log('Short token response:', shortTokenData);
 
     if (!shortTokenData.access_token) {
-      throw new Error('Failed to get short-lived access token');
+      console.error('Short token error:', shortTokenData);
+      throw new Error(shortTokenData.error?.message || 'Failed to get short-lived access token');
     }
 
     // Exchange short-lived token for a long-lived token
     const longTokenRes = await fetch(
-      `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${
+      `https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${
+        process.env.INSTAGRAM_CLIENT_ID
+      }&client_secret=${
         process.env.INSTAGRAM_CLIENT_SECRET
-      }&access_token=${shortTokenData.access_token}`
+      }&fb_exchange_token=${shortTokenData.access_token}`
     );
 
     const longTokenData = await longTokenRes.json();
+    console.log('Long token response:', longTokenData);
 
     if (!longTokenData.access_token) {
+      console.error('Long token error:', longTokenData);
       throw new Error('Failed to get long-lived access token');
     }
 
@@ -103,7 +111,7 @@ export const generateTokens = async (code: string) => {
       expires_in: longTokenData.expires_in,
     };
   } catch (error) {
-    console.error('Error generating tokens:', error);
+    console.error('Error in generateTokens:', error);
     throw error;
   }
 };
