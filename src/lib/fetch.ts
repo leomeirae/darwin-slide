@@ -65,8 +65,8 @@ export const generateTokens = async (code: string) => {
   try {
     console.log('Starting token generation with code:', code);
     
-    // Exchange the code for a short-lived access token
-    const shortTokenRes = await fetch('https://graph.facebook.com/v21.0/oauth/access_token', {
+    // Exchange the code for an access token using Instagram's endpoint
+    const tokenRes = await fetch(process.env.INSTAGRAM_TOKEN_URL as string, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -80,35 +80,27 @@ export const generateTokens = async (code: string) => {
       }),
     });
 
-    const shortTokenData = await shortTokenRes.json();
-    console.log('Short token response:', shortTokenData);
+    const tokenData = await tokenRes.json();
+    console.log('Token response:', tokenData);
 
-    if (!shortTokenData.access_token) {
-      console.error('Short token error:', shortTokenData);
-      throw new Error(shortTokenData.error?.message || 'Failed to get short-lived access token');
+    if (!tokenData.access_token) {
+      console.error('Token error:', tokenData);
+      throw new Error(tokenData.error?.message || 'Failed to get access token');
     }
 
-    // Exchange short-lived token for a long-lived token
-    const longTokenRes = await fetch(
-      `https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${
-        process.env.INSTAGRAM_CLIENT_ID
-      }&client_secret=${
-        process.env.INSTAGRAM_CLIENT_SECRET
-      }&fb_exchange_token=${shortTokenData.access_token}`
-    );
+    // Get the long-lived token
+    const longLivedTokenRes = await fetch(`${process.env.INSTAGRAM_BASE_URL}/refresh_access_token?grant_type=ig_refresh_token&access_token=${tokenData.access_token}`);
+    const longLivedTokenData = await longLivedTokenRes.json();
 
-    const longTokenData = await longTokenRes.json();
-    console.log('Long token response:', longTokenData);
-
-    if (!longTokenData.access_token) {
-      console.error('Long token error:', longTokenData);
+    if (!longLivedTokenData.access_token) {
+      console.error('Long-lived token error:', longLivedTokenData);
       throw new Error('Failed to get long-lived access token');
     }
 
     return {
-      access_token: longTokenData.access_token,
-      token_type: longTokenData.token_type,
-      expires_in: longTokenData.expires_in,
+      access_token: longLivedTokenData.access_token,
+      token_type: 'bearer',
+      expires_in: longLivedTokenData.expires_in,
     };
   } catch (error) {
     console.error('Error in generateTokens:', error);

@@ -18,7 +18,7 @@ export const onOAuthInstagram = async (strategy: 'INSTAGRAM' | 'CRM') => {
       'business_management'
     ].join(',')
 
-    const authUrl = `https://www.facebook.com/v21.0/dialog/oauth?client_id=${process.env.INSTAGRAM_CLIENT_ID}&redirect_uri=${process.env.NEXT_PUBLIC_HOST_URL}/callback/instagram&scope=${scopes}&response_type=code`
+    const authUrl = `${process.env.INSTAGRAM_EMBEDDED_OAUTH_URL}?client_id=${process.env.INSTAGRAM_CLIENT_ID}&redirect_uri=${process.env.NEXT_PUBLIC_HOST_URL}/callback/instagram&scope=${scopes}&response_type=code`
 
     return redirect(authUrl)
   }

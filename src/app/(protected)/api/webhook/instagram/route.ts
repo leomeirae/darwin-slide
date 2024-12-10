@@ -9,7 +9,7 @@ import {
 } from '@/actions/webhook/queries'
 import { sendDM, sendPrivateMessage } from '@/lib/fetch'
 import { openai } from '@/lib/openai'
-import { client } from '@/lib/prisma'
+import { prisma } from '@/lib/prisma'
 import { NextRequest, NextResponse } from 'next/server'
 
 // Add type declaration for global
@@ -142,7 +142,7 @@ export async function POST(req: NextRequest) {
                 smart_ai_message.choices[0].message.content
               )
 
-              await client.$transaction([reciever, sender])
+              await prisma.$transaction([reciever, sender])
               console.log('📤 Sending AI response message')
               const direct_message = await sendDM(
                 webhook_payload.entry[0].id,
@@ -252,7 +252,7 @@ export async function POST(req: NextRequest) {
                   smart_ai_message.choices[0].message.content
                 )
 
-                await client.$transaction([reciever, sender])
+                await prisma.$transaction([reciever, sender])
 
                 const direct_message = await sendPrivateMessage(
                   webhook_payload.entry[0].id,
@@ -323,7 +323,7 @@ export async function POST(req: NextRequest) {
               webhook_payload.entry[0].messaging[0].sender.id,
               smart_ai_message.choices[0].message.content
             )
-            await client.$transaction([reciever, sender])
+            await prisma.$transaction([reciever, sender])
             const direct_message = await sendDM(
               webhook_payload.entry[0].id,
               webhook_payload.entry[0].messaging[0].sender.id,

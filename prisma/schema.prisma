@@ -5,7 +5,8 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client-js"
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -17,8 +18,8 @@ model User {
   id           String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   clerkId      String         @unique
   email        String         @unique
-  firstname    String?        @unique
-  lastname     String?        @unique
+  firstname    String?
+  lastname     String?
   createdAt    DateTime       @default(now())
   subscription Subscription?
   integrations Integrations[]
