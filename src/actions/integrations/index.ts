@@ -8,14 +8,11 @@ import axios from 'axios'
 
 export const onOAuthInstagram = async (strategy: 'INSTAGRAM' | 'CRM') => {
   if (strategy === 'INSTAGRAM') {
+    // Instagram Basic Display API scopes
     const scopes = [
-      'instagram_basic',
-      'instagram_content_publish',
-      'instagram_manage_comments',
-      'instagram_manage_insights',
-      'pages_show_list',
-      'pages_read_engagement',
-      'business_management'
+      'basic',
+      'user_profile',
+      'user_media'
     ].join(',')
 
     const authUrl = `${process.env.INSTAGRAM_EMBEDDED_OAUTH_URL}?client_id=${process.env.INSTAGRAM_CLIENT_ID}&redirect_uri=${process.env.NEXT_PUBLIC_HOST_URL}/callback/instagram&scope=${scopes}&response_type=code`
@@ -40,13 +37,13 @@ export const onIntegrate = async (code: string) => {
       if (token && token.access_token) {
         console.log('Getting Instagram user ID...');
         const insta_id = await axios.get(
-          `https://graph.facebook.com/v21.0/me?fields=id,instagram_business_account{id}&access_token=${token.access_token}`
+          `${process.env.INSTAGRAM_BASE_URL}/me?fields=id,username&access_token=${token.access_token}`
         )
         console.log('Instagram response:', insta_id.data);
 
-        if (!insta_id.data.instagram_business_account) {
-          console.error('No Instagram business account found');
-          return { status: 401, error: 'No Instagram business account found' }
+        if (!insta_id.data.id) {
+          console.error('No Instagram user ID found');
+          return { status: 401, error: 'No Instagram user ID found' }
         }
 
         const today = new Date()
@@ -57,7 +54,7 @@ export const onIntegrate = async (code: string) => {
           user.id,
           token.access_token,
           new Date(expire_date),
-          insta_id.data.instagram_business_account.id
+          insta_id.data.id
         )
         console.log('Integration created:', create);
         return { status: 200, data: create }
