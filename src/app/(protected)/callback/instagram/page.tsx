@@ -11,11 +11,16 @@ type Props = {
 const Page = async ({ searchParams: { code } }: Props) => {
   if (code) {
     console.log(code)
-    const user = await onIntegrate(code.split('#_')[0])
-    if (user.status === 200) {
-      return redirect(
-        `/dashboard/${user.data?.firstname}${user.data?.lastname}/integrations`
-      )
+    try {
+      const user = await onIntegrate(code.split('#_')[0])
+      if (user.status === 200) {
+        const firstname = user.data?.firstname || 'User'; // Fallback para evitar URL malformada
+        const lastname = user.data?.lastname || ''; // Fallback para evitar URL malformada
+        return redirect(`/dashboard/${firstname}${lastname}/integrations`)
+      }
+    } catch (error) {
+      console.error('Erro ao integrar:', error)
+      // Você pode redirecionar para uma página de erro ou mostrar uma mensagem
     }
   }
   return redirect('/sign-up')
