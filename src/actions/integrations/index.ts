@@ -8,7 +8,16 @@ import axios from 'axios'
 
 export const onOAuthInstagram = async (strategy: 'INSTAGRAM' | 'CRM') => {
   if (strategy === 'INSTAGRAM') {
-    return redirect(process.env.INSTAGRAM_EMBEDDED_OAUTH_URL as string)
+    const scopes = [
+      'instagram_business_basic',
+      'instagram_business_manage_messages',
+      'instagram_business_manage_comments',
+      'instagram_business_content_publish'
+    ].join('%2C')
+
+    const authUrl = `https://www.instagram.com/oauth/authorize?enable_fb_login=0&force_authentication=1&client_id=${process.env.INSTAGRAM_CLIENT_ID}&redirect_uri=${process.env.NEXT_PUBLIC_HOST_URL}/callback/instagram&response_type=code&scope=${scopes}`
+
+    return redirect(authUrl)
   }
 }
 

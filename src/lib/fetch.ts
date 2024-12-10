@@ -62,32 +62,48 @@ export const sendPrivateMessage = async (
 
 
 export const generateTokens = async (code: string) => {
-  const insta_form = new FormData()
-  insta_form.append('client_id', process.env.INSTAGRAM_CLIENT_ID as string)
+  try {
+    // Exchange the code for a short-lived access token
+    const shortTokenRes = await fetch('https://api.instagram.com/oauth/access_token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        client_id: process.env.INSTAGRAM_CLIENT_ID as string,
+        client_secret: process.env.INSTAGRAM_CLIENT_SECRET as string,
+        grant_type: 'authorization_code',
+        redirect_uri: `${process.env.NEXT_PUBLIC_HOST_URL}/callback/instagram`,
+        code: code,
+      }),
+    });
 
-  insta_form.append(
-    'client_secret',
-    process.env.INSTAGRAM_CLIENT_SECRET as string
-  )
-  insta_form.append('grant_type', 'authorization_code')
-  insta_form.append(
-    'redirect_uri',
-    `${process.env.NEXT_PUBLIC_HOST_URL}/callback/instagram`
-  )
-  insta_form.append('code', code)
+    const shortTokenData = await shortTokenRes.json();
 
-  const shortTokenRes = await fetch(process.env.INSTAGRAM_TOKEN_URL as string, {
-    method: 'POST',
-    body: insta_form,
-  })
+    if (!shortTokenData.access_token) {
+      throw new Error('Failed to get short-lived access token');
+    }
 
-  const token = await shortTokenRes.json()
-  if (token.permissions.length > 0) {
-    console.log(token, 'got permissions')
-    const long_token = await axios.get(
-      `${process.env.INSTAGRAM_BASE_URL}/access_token?grant_type=ig_exchange_token&client_secret=${process.env.INSTAGRAM_CLIENT_SECRET}&access_token=${token.access_token}`
-    )
+    // Exchange short-lived token for a long-lived token
+    const longTokenRes = await fetch(
+      `https://graph.instagram.com/access_token?grant_type=ig_exchange_token&client_secret=${
+        process.env.INSTAGRAM_CLIENT_SECRET
+      }&access_token=${shortTokenData.access_token}`
+    );
 
-    return long_token.data
+    const longTokenData = await longTokenRes.json();
+
+    if (!longTokenData.access_token) {
+      throw new Error('Failed to get long-lived access token');
+    }
+
+    return {
+      access_token: longTokenData.access_token,
+      token_type: longTokenData.token_type,
+      expires_in: longTokenData.expires_in,
+    };
+  } catch (error) {
+    console.error('Error generating tokens:', error);
+    throw error;
   }
-}
+};
