@@ -44,8 +44,10 @@ export default function ProfileSettings() {
       if (error) throw error
       setProfile(data || { id: user.id })
     } catch (error) {
-      console.error('Error fetching profile:', error)
-      setError('Failed to load profile')
+      if (error instanceof Error) {
+        console.error('Error fetching profile:', error.message)
+        setError('Failed to load profile')
+      }
     } finally {
       setIsLoading(false)
     }

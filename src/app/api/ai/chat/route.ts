@@ -9,7 +9,10 @@ const openai = new OpenAI({
 
 export async function POST(req: Request) {
   try {
-    const supabase = createRouteHandlerClient({ cookies })
+    // Aguardar os cookies antes de criar o cliente
+    const cookieStore = cookies()
+    const supabase = createRouteHandlerClient({ cookies: () => cookieStore })
+    
     const { messages } = await req.json()
 
     // Check authentication
@@ -45,7 +48,7 @@ export async function POST(req: Request) {
 
     // Make request to OpenAI
     const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
+      model: 'gpt-4o-mini',
       messages: messages,
       temperature: 0.7,
       max_tokens: 1000,
